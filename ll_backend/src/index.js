@@ -12,7 +12,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
-const PORT = process.env.PORT || 8090;
+const PORT = process.env.PORT || 8100;
 
 //Routes
 app.use('/places', placesRouter);

@@ -27,10 +27,14 @@ router.get('/', authMiddleware, async (req, res) => {
 // Add a new place
 router.post('/add', authMiddleware, async (req, res) => {
   try {
-    const { name, address_line1, latitude, longitude } = req.body;
+    const { name, address_line1, city, state} = req.body;
+    if (!name || !address_line1 || !city || !state) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+    const geocodeResult = await convertAddressToLatLng(address_line1 + ', ' + city + ', ' + state);
     const newPlace = await pool.query(
-      'INSERT INTO places (name, address_line1, latitude, longitude) VALUES ($1, $2, $3, $4) RETURNING *',
-      [name, address_line1, latitude, longitude]
+      'INSERT INTO places (name, address_line1, city, state, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [name, address_line1, city, state, geocodeResult[0].latitude, geocodeResult[0].longitude]
     );
     res.json(newPlace.rows[0]);
   } catch (err) {
