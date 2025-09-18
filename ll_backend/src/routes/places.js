@@ -2,6 +2,17 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../../config/db');
 const authMiddleware = require('../middleware/authMiddleware');
+const NodeGeocoder = require('node-geocoder');
+
+
+const options = {
+  provider: 'openstreetmap'
+};
+
+async function convertAddressToLatLng(address) {
+  const geocoder = NodeGeocoder(options);
+  return geocoder.geocode(address);
+}
 
 // Get all places
 router.get('/', authMiddleware, async (req, res) => {
@@ -14,7 +25,7 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // Add a new place
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/add', authMiddleware, async (req, res) => {
   try {
     const { name, address_line1, latitude, longitude } = req.body;
     const newPlace = await pool.query(
@@ -24,6 +35,23 @@ router.post('/', authMiddleware, async (req, res) => {
     res.json(newPlace.rows[0]);
   } catch (err) {
     console.error(err.message);
+  }
+});
+
+router.get('/geocode', async (req, res) => {
+  try {
+    const { address } = req.query;
+    if (!address) {
+      return res.status(400).json({ error: 'Address query parameter is required' });
+    }
+    const geocodeResult = await convertAddressToLatLng(address);
+    if (geocodeResult.length === 0) {
+      return res.status(404).json({ error: 'Address not found' });
+    }
+    res.json(geocodeResult[0]);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
